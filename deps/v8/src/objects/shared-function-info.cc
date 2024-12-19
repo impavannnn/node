@@ -412,7 +412,7 @@ void SharedFunctionInfo::DiscardCompiled(
   int start_position = shared_info->StartPosition();
   int end_position = shared_info->EndPosition();
 
-  MaybeHandle<UncompiledData> data;
+  MaybeDirectHandle<UncompiledData> data;
   if (!shared_info->HasUncompiledDataWithPreparseData()) {
     // Create a new UncompiledData, without pre-parsed scope.
     data = isolate->factory()->NewUncompiledDataWithoutPreparseData(
@@ -493,8 +493,6 @@ std::ostream& operator<<(std::ostream& os, const SourceCodeOf& v) {
   Tagged<String> script_source =
       UncheckedCast<String>(Cast<Script>(s->script())->source());
 
-  if (!script_source->LooksValid()) return os << "<Invalid Source>";
-
   if (!s->is_toplevel()) {
     os << "function ";
     Tagged<String> name = s->Name();
@@ -572,13 +570,14 @@ void SharedFunctionInfo::InitFromFunctionLiteral(IsolateT* isolate,
 
     raw_sfi->set_is_toplevel(is_toplevel);
     DCHECK(IsTheHole(raw_sfi->outer_scope_info()));
-    if (!is_toplevel) {
-      Scope* outer_scope = lit->scope()->GetOuterScopeWithContext();
-      if (outer_scope) {
-        raw_sfi->set_outer_scope_info(*outer_scope->scope_info());
-        raw_sfi->set_private_name_lookup_skips_outer_class(
-            lit->scope()->private_name_lookup_skips_outer_class());
-      }
+    Scope* outer_scope = lit->scope()->GetOuterScopeWithContext();
+    if (outer_scope && (!is_toplevel || !outer_scope->is_script_scope())) {
+      raw_sfi->set_outer_scope_info(*outer_scope->scope_info());
+      raw_sfi->set_private_name_lookup_skips_outer_class(
+          lit->scope()->private_name_lookup_skips_outer_class());
+    }
+    if (lit->scope()->is_reparsed()) {
+      raw_sfi->SetScopeInfo(*lit->scope()->scope_info());
     }
 
     raw_sfi->set_length(lit->function_length());
@@ -819,7 +818,7 @@ void SharedFunctionInfo::EnsureBytecodeArrayAvailable(
 
 // static
 void SharedFunctionInfo::EnsureSourcePositionsAvailable(
-    Isolate* isolate, Handle<SharedFunctionInfo> shared_info) {
+    Isolate* isolate, DirectHandle<SharedFunctionInfo> shared_info) {
   if (shared_info->CanCollectSourcePosition(isolate)) {
     std::optional<Isolate::ExceptionScope> exception_scope;
     if (isolate->has_exception()) {

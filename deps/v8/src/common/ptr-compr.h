@@ -18,7 +18,8 @@ class IsolateGroup;
 template <typename Cage>
 class V8HeapCompressionSchemeImpl {
  public:
-  V8_INLINE static Address GetPtrComprCageBaseAddress(Address on_heap_addr);
+  V8_INLINE static constexpr Address GetPtrComprCageBaseAddress(
+      Address on_heap_addr);
 
   V8_INLINE static Address GetPtrComprCageBaseAddress(
       PtrComprCageBase cage_base);
@@ -30,7 +31,7 @@ class V8HeapCompressionSchemeImpl {
   // cage.
   V8_INLINE static Tagged_t CompressObject(Address tagged);
   // Compress a potentially invalid pointer.
-  V8_INLINE static Tagged_t CompressAny(Address tagged);
+  V8_INLINE static constexpr Tagged_t CompressAny(Address tagged);
 
   // Decompresses smi value.
   V8_INLINE static Address DecompressTaggedSigned(Tagged_t raw_value);
@@ -77,8 +78,10 @@ using V8HeapCompressionScheme = V8HeapCompressionSchemeImpl<MainCage>;
 class TrustedCage : public AllStatic {
   friend class V8HeapCompressionSchemeImpl<TrustedCage>;
 
-  // The TrustedCage is only used in the shared cage build configuration, so
-  // there is no need for a thread_local version.
+  // Just to unify code with other cages in the multi-cage mode.
+  static V8_EXPORT_PRIVATE Address base_non_inlined();
+  static V8_EXPORT_PRIVATE void set_base_non_inlined(Address base);
+
   static V8_EXPORT_PRIVATE uintptr_t base_ V8_CONSTINIT;
 };
 using TrustedSpaceCompressionScheme = V8HeapCompressionSchemeImpl<TrustedCage>;
@@ -128,7 +131,7 @@ class ExternalCodeCompressionScheme {
   V8_INLINE static Tagged_t CompressObject(Address tagged);
   // Compress anything that does not follow the above requirements (e.g. a maybe
   // object, or a marker bit pattern).
-  V8_INLINE static Tagged_t CompressAny(Address tagged);
+  V8_INLINE static constexpr Tagged_t CompressAny(Address tagged);
 
   // Decompresses smi value.
   V8_INLINE static Address DecompressTaggedSigned(Tagged_t raw_value);

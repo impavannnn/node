@@ -59,6 +59,11 @@ constexpr uint64_t kFP64To16DenormalMagic =
     (kFP16MinExponent + (kFP64MantissaBits - kFP16MantissaBits))
     << kFP64MantissaBits;
 
+constexpr uint32_t kFP32WithoutSignMask = 0x7fffffff;
+constexpr uint32_t kFP32MinFP16ZeroRepresentable = 0x33000000;
+constexpr uint32_t kFP32MaxFP16Representable = 0x47800000;
+constexpr uint32_t kFP32SubnormalThresholdOfFP16 = 0x38800000;
+
 // The limit for the the fractionDigits/precision for toFixed, toPrecision
 // and toExponential.
 const int kMaxFractionDigits = 100;
@@ -157,11 +162,12 @@ double V8_EXPORT_PRIVATE HexStringToDouble(base::Vector<const uint8_t> str);
 double V8_EXPORT_PRIVATE
 ImplicitOctalStringToDouble(base::Vector<const uint8_t> str);
 
-double StringToInt(Isolate* isolate, Handle<String> string, int radix);
+double StringToInt(Isolate* isolate, DirectHandle<String> string, int radix);
 
 // This follows https://tc39.github.io/proposal-bigint/#sec-string-to-bigint
 // semantics: "" => 0n.
-MaybeHandle<BigInt> StringToBigInt(Isolate* isolate, Handle<String> string);
+MaybeHandle<BigInt> StringToBigInt(Isolate* isolate,
+                                   DirectHandle<String> string);
 
 // This version expects a zero-terminated character array. Radix will
 // be inferred from string prefix (case-insensitive):
@@ -227,7 +233,7 @@ inline uint32_t NumberToUint32(Tagged<Object> number);
 inline int64_t NumberToInt64(Tagged<Object> number);
 inline uint64_t PositiveNumberToUint64(Tagged<Object> number);
 
-double StringToDouble(Isolate* isolate, Handle<String> string,
+double StringToDouble(Isolate* isolate, DirectHandle<String> string,
                       ConversionFlag flags, double empty_string_val = 0.0);
 double FlatStringToDouble(Tagged<String> string, ConversionFlag flags,
                           double empty_string_val);
@@ -238,7 +244,7 @@ double FlatStringToDouble(Tagged<String> string, ConversionFlag flags,
 // can be represented using a string of length 23.
 V8_EXPORT_PRIVATE std::optional<double> TryStringToDouble(
     LocalIsolate* isolate, DirectHandle<String> object,
-    int max_length_for_conversion = 23);
+    uint32_t max_length_for_conversion = 23);
 
 // Return std::nullopt if the string is longer than 20.
 V8_EXPORT_PRIVATE std::optional<double> TryStringToInt(

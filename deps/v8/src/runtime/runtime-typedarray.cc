@@ -49,8 +49,8 @@ RUNTIME_FUNCTION(Runtime_ArrayBufferSetDetachKey) {
 RUNTIME_FUNCTION(Runtime_TypedArrayCopyElements) {
   HandleScope scope(isolate);
   DCHECK_EQ(3, args.length());
-  Handle<JSTypedArray> target = args.at<JSTypedArray>(0);
-  Handle<Object> source = args.at(1);
+  DirectHandle<JSTypedArray> target = args.at<JSTypedArray>(0);
+  DirectHandle<JSAny> source = args.at<JSAny>(1);
   size_t length;
   CHECK(TryNumberToSize(args[2], &length));
   ElementsAccessor* accessor = target->GetElementsAccessor();
@@ -82,7 +82,7 @@ bool CompareNum(T x, T y) {
     return true;
   } else if (x > y) {
     return false;
-  } else if (!std::is_integral<T>::value) {
+  } else if (!std::is_integral_v<T>) {
     double _x = x, _y = y;
     if (x == 0 && x == y) {
       /* -0.0 is less than +0.0 */
@@ -125,7 +125,7 @@ RUNTIME_FUNCTION(Runtime_TypedArraySortFast) {
                                      isolate);
   const bool copy_data = buffer->is_shared();
 
-  Handle<ByteArray> array_copy;
+  DirectHandle<ByteArray> array_copy;
   std::vector<uint8_t> offheap_copy;
   void* data_copy_ptr = nullptr;
   if (copy_data) {
@@ -190,8 +190,8 @@ RUNTIME_FUNCTION(Runtime_TypedArraySortFast) {
 RUNTIME_FUNCTION(Runtime_TypedArraySet) {
   HandleScope scope(isolate);
   DCHECK_EQ(4, args.length());
-  Handle<JSTypedArray> target = args.at<JSTypedArray>(0);
-  Handle<Object> source = args.at(1);
+  DirectHandle<JSTypedArray> target = args.at<JSTypedArray>(0);
+  DirectHandle<JSAny> source = args.at<JSAny>(1);
   size_t length;
   CHECK(TryNumberToSize(args[2], &length));
   size_t offset;

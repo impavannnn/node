@@ -74,8 +74,8 @@ class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE) TorqueGeneratedFactory {
 struct NewCodeOptions {
   CodeKind kind;
   Builtin builtin;
+  bool is_context_specialized;
   bool is_turbofanned;
-  int stack_slots;
   uint16_t parameter_count;
   int instruction_size;
   int metadata_size;
@@ -84,6 +84,7 @@ struct NewCodeOptions {
   int handler_table_offset;
   int constant_pool_offset;
   int code_comments_offset;
+  int32_t builtin_jump_table_info_offset;
   int32_t unwinding_info_offset;
   MaybeHandle<TrustedObject> bytecode_or_interpreter_data;
   MaybeHandle<DeoptimizationData> deoptimization_data;
@@ -129,6 +130,9 @@ class FactoryBase : public TorqueGeneratedFactory<Impl> {
   template <AllocationType allocation = AllocationType::kYoung>
   inline Handle<HeapNumber> NewHeapNumberWithHoleNaN();
 
+  template <AllocationType allocation = AllocationType::kYoung>
+  inline Handle<HeapNumber> NewHeapInt32(int32_t value);
+
   template <AllocationType allocation>
   Handle<HeapNumber> NewHeapNumber();
 
@@ -143,7 +147,8 @@ class FactoryBase : public TorqueGeneratedFactory<Impl> {
       int length, AllocationType allocation = AllocationType::kYoung);
 
   // Allocates a trusted fixed array in trusted space, initialized with zeros.
-  Handle<TrustedFixedArray> NewTrustedFixedArray(int length);
+  Handle<TrustedFixedArray> NewTrustedFixedArray(
+      int length, AllocationType allocation = AllocationType::kTrusted);
 
   // Allocates a protected fixed array in trusted space, initialized with zeros.
   Handle<ProtectedFixedArray> NewProtectedFixedArray(int length);
@@ -184,6 +189,10 @@ class FactoryBase : public TorqueGeneratedFactory<Impl> {
   // zeros.
   Handle<TrustedWeakFixedArray> NewTrustedWeakFixedArray(int length);
 
+  // Allocates a protected weak fixed array in trusted space, initialized with
+  // zeros.
+  Handle<ProtectedWeakFixedArray> NewProtectedWeakFixedArray(int length);
+
   // The function returns a pre-allocated empty byte array for length = 0.
   Handle<ByteArray> NewByteArray(
       int length, AllocationType allocation = AllocationType::kYoung);
@@ -191,9 +200,6 @@ class FactoryBase : public TorqueGeneratedFactory<Impl> {
   // Allocates a trusted byte array in trusted space, initialized with zeros.
   Handle<TrustedByteArray> NewTrustedByteArray(
       int length, AllocationType allocation_type = AllocationType::kTrusted);
-
-  Handle<ExternalPointerArray> NewExternalPointerArray(
-      int length, AllocationType allocation = AllocationType::kYoung);
 
   Handle<DeoptimizationLiteralArray> NewDeoptimizationLiteralArray(int length);
   Handle<DeoptimizationFrameTranslation> NewDeoptimizationFrameTranslation(
@@ -203,9 +209,11 @@ class FactoryBase : public TorqueGeneratedFactory<Impl> {
       int length, const uint8_t* raw_bytecodes, int frame_size,
       uint16_t parameter_count, uint16_t max_arguments,
       DirectHandle<TrustedFixedArray> constant_pool,
-      DirectHandle<TrustedByteArray> handler_table);
+      DirectHandle<TrustedByteArray> handler_table,
+      AllocationType allocation = AllocationType::kTrusted);
 
-  Handle<BytecodeWrapper> NewBytecodeWrapper();
+  Handle<BytecodeWrapper> NewBytecodeWrapper(
+      AllocationType allocation = AllocationType::kOld);
 
   // Allocates a fixed array for name-value pairs of boilerplate properties and
   // calculates the number of properties we need to store in the backing store.
@@ -348,7 +356,7 @@ class FactoryBase : public TorqueGeneratedFactory<Impl> {
   // Allocates a new BigInt with {length} digits. Only to be used by
   // MutableBigInt::New*.
   Handle<FreshlyAllocatedBigInt> NewBigInt(
-      int length, AllocationType allocation = AllocationType::kYoung);
+      uint32_t length, AllocationType allocation = AllocationType::kYoung);
 
   // Create a serialized scope info.
   Handle<ScopeInfo> NewScopeInfo(int length,
@@ -408,6 +416,7 @@ class FactoryBase : public TorqueGeneratedFactory<Impl> {
   Handle<SharedFunctionInfo> NewSharedFunctionInfo(
       MaybeDirectHandle<String> maybe_name,
       MaybeDirectHandle<HeapObject> maybe_function_data, Builtin builtin,
+      int len, AdaptArguments adapt,
       FunctionKind kind = FunctionKind::kNormalFunction);
 
   Handle<String> MakeOrFindTwoCharacterString(uint16_t c1, uint16_t c2);
