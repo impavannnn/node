@@ -103,8 +103,8 @@ static V8_INLINE void InitializeNativeHandle(os_unfair_lock* lock) {
 
 // TODO(verwaest): We should use the constants from the header, but they aren't
 // exposed until macOS 15.
-#define OS_UNFAIR_LOCK_DATA_SYNCHRONIZATION 0x00010000
-#define OS_UNFAIR_LOCK_ADAPTIVE_SPIN 0x00040000
+#define OS_UNFAIR_LOCK_DATA_SYNCHRONIZATION_V8 0x00010000
+#define OS_UNFAIR_LOCK_ADAPTIVE_SPIN_V8 0x00040000
 
 typedef uint32_t os_unfair_lock_options_t;
 
@@ -115,18 +115,20 @@ os_unfair_lock_lock_with_options(os_unfair_lock* lock,
 }
 
 static V8_INLINE void LockNativeHandle(os_unfair_lock* lock) {
-  if (__builtin_available(macOS 15, *)) {
+#ifdef OS_UNFAIR_LOCK_DATA_SYNCHRONIZATION
     const os_unfair_lock_flags_t options = static_cast<os_unfair_lock_flags_t>(
         OS_UNFAIR_LOCK_DATA_SYNCHRONIZATION | OS_UNFAIR_LOCK_ADAPTIVE_SPIN);
     os_unfair_lock_lock_with_flags(lock, options);
-  } else if (os_unfair_lock_lock_with_options) {
+#else
+  if (os_unfair_lock_lock_with_options) {
     const os_unfair_lock_options_t options =
         static_cast<os_unfair_lock_options_t>(
-            OS_UNFAIR_LOCK_DATA_SYNCHRONIZATION | OS_UNFAIR_LOCK_ADAPTIVE_SPIN);
+            OS_UNFAIR_LOCK_DATA_SYNCHRONIZATION_V8 | OS_UNFAIR_LOCK_ADAPTIVE_SPIN_V8);
     os_unfair_lock_lock_with_options(lock, options);
   } else {
     os_unfair_lock_lock(lock);
   }
+#endif
 }
 
 static V8_INLINE void UnlockNativeHandle(os_unfair_lock* lock) {
